@@ -202,7 +202,7 @@ export function ProfileTab() {
 
   // Load saved restaurants
   useEffect(() => {
-    if (!auth?.user) return;
+    if (!user) return;
     
     const loadSavedRestaurants = async () => {
       setIsLoadingSaved(true);
@@ -297,7 +297,7 @@ export function ProfileTab() {
     
     try {
       await updateDocument('users', user.uid, updatedData);
-      setUser(prev => prev ? { ...prev, ...updatedData } : null);
+      setProfile((prev: UserProfile | null) => prev ? { ...prev, ...updatedData } : null);
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Failed to update profile. Please try again.');
@@ -312,7 +312,7 @@ export function ProfileTab() {
     try {
       const downloadURL = await uploadFile(`profilePics/${user.uid}`, file);
       await updateDocument('users', user.uid, { photoURL: downloadURL });
-      setUser(prev => prev ? { ...prev, photoURL: downloadURL } : null);
+      setProfile((prev: UserProfile | null) => prev ? { ...prev, photoURL: downloadURL } : null);
     } catch (error) {
       console.error('Error uploading photo:', error);
       alert('Failed to upload photo. Please try again.');
