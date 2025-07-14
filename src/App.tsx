@@ -49,38 +49,38 @@ function App() {
           <NotificationProvider>
             <AuthUserProvider>
               <Routes>
-            {/* Public routes */}
-            <Route element={<AuthLayout />}>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-            </Route>
-            </Routes>
+                {/* Public routes */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                </Route>
+                {/* Protected routes */}
+                <Route element={<AppLayout />}>
+                  <Route path="/join-picnic/:picnicId" element={
+                    <PrivateRoute>
+                      <JoinPicnicPage />
+                    </PrivateRoute>
+                  } />
+                  <Route 
+                    element={
+                      <PrivateRoute>
+                        <Outlet />
+                      </PrivateRoute>
+                    }
+                  >
+                    <Route index element={<StartPicnikTab />} />
+                    <Route path="/start-picnic" element={<StartPicnikTab />} />
+                    <Route path="/friends" element={<FriendsTab />} />
+                    <Route path="/find-friends" element={<FriendsPage />} />
+                    <Route path="/restaurants" element={<RestaurantsTab />} />
+                    <Route path="/profile" element={<ProfileTab />} />
+                  </Route>
+                </Route>
+                {/* Redirect to home if no match */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </AuthUserProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </FirebaseProvider>
-    </ThemeProvider>
-              } />
-              <Route 
-                element={
-                  <PrivateRoute>
-                    <Outlet />
-                  </PrivateRoute>
-                }
-              >
-                <Route index element={<StartPicnikTab />} />
-                <Route path="/start-picnic" element={<StartPicnikTab />} />
-                <Route path="/friends" element={<FriendsTab />} />
-                <Route path="/find-friends" element={<FriendsPage />} />
-                <Route path="/restaurants" element={<RestaurantsTab />} />
-                <Route path="/profile" element={<ProfileTab />} />
-              </Route>
-            </Route>
-            
-            {/* Redirect to home if no match */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
           </NotificationProvider>
         </AuthProvider>
       </FirebaseProvider>
