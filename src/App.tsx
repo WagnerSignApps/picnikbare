@@ -5,6 +5,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { FirebaseProvider } from './contexts/FirebaseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
+import { AuthUserProvider } from './contexts/AuthUserContext';
+import AuthPage from './pages/AuthPage';
 import { NotificationBell } from './components/notifications/NotificationBell';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { FriendsTab } from './pages/FriendsTab';
@@ -45,19 +47,20 @@ function App() {
       <FirebaseProvider>
         <AuthProvider>
           <NotificationProvider>
-          <Routes>
+            <AuthUserProvider>
+              <Routes>
             {/* Public routes */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/auth" element={<AuthPage />} />
             </Route>
-            
-            {/* Protected routes */}
-            <Route element={<AppLayout />}>
-              <Route path="/join-picnic/:picnicId" element={
-                <PrivateRoute>
-                  <JoinPicnicPage />
-                </PrivateRoute>
+            </Routes>
+            </AuthUserProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </FirebaseProvider>
+    </ThemeProvider>
               } />
               <Route 
                 element={
