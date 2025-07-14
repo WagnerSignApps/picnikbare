@@ -1,0 +1,292 @@
+import { useState, useEffect, useRef } from 'react';
+import { MagnifyingGlassIcon, MapPinIcon, StarIcon, BookmarkIcon as BookmarkIconOutline, CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/react/24/solid';
+import { getNearbyRestaurants } from '../services/googleMaps';
+import type { Restaurant } from '../services/googleMaps';
+import { useFirebase } from '../contexts/FirebaseContext';
+
+// Default location (can be replaced with user's current location)
+const DEFAULT_LOCATION = {
+  lat: 40.7128, // New York City
+  lng: -74.0060,
+};
+
+const getPriceLevelString = (level?: number) => {
+  if (!level) return '';
+  return ' • ' + '$'.repeat(level);
+};
+
+const getCuisineType = (types?: string[]) => {
+  if (!types) return 'Restaurant';
+  
+  // Filter out generic types and return the first specific one
+  const excludeTypes = ['point_of_interest', 'establishment', 'food', 'restaurant'];
+  const cuisineType = types.find(type => !excludeTypes.includes(type));
+  
+  return cuisineType ? cuisineType.split('_').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ') : 'Restaurant';
+};
+
+interface SavedRestaurant extends Restaurant {
+  savedAt: number;
+  saved: boolean;
+}
+
+export const RestaurantsTab = () => {
+  const { auth, db, getDocs, collection, query, where, addDoc, deleteDoc } = useFirebase();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [restaurants, setRestaurants] = useState<SavedRestaurant[]>([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState<SavedRestaurant[]>([]);
+  const [savedRestaurants, setSavedRestaurants] = useState<{[key: string]: boolean}>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [location, setLocation] = useState(DEFAULT_LOCATION);
+  const [radius, setRadius] = useState(1609); // 1 mile in meters
+  const [showRadiusMenu, setShowRadiusMenu] = useState(false);
+  
+  // Picnik modal state
+  const [showPicnikModal, setShowPicnikModal] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [image, setImage] = useState('');
+  const [friends, setFriends] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState<'camera' | 'preview' | 'details'>('camera');
+
+  const handleStartPicnik = (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setShowPicnikModal(true);
+    setStep('camera');
+    setImage('');
+    setFriends([]);
+  };
+
+  const handleTakePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImage(event.target.result as string);
+          setStep('preview');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRetake = () => {
+    setImage('');
+    setStep('camera');
+  };
+
+  const handleContinue = () => {
+    setStep('details');
+  };
+
+  const toggleFriend = (friendId: string) => {
+    setFriends(prev => 
+      prev.includes(friendId)
+        ? prev.filter(id => id !== friendId)
+        : [...prev, friendId]
+    );
+  };
+
+  const handleSubmitPicnik = () => {
+    if (!selectedRestaurant || friends.length === 0) return;
+    
+    // TODO: Implement picnic creation logic
+    console.log('Starting picnic at:', selectedRestaurant.name);
+    console.log('With friends:', friends);
+    
+    // Close modal after submission
+    setShowPicnikModal(false);
+  };
+
+  // Rest of the component code...
+  
+  // For now, return a simple loading state
+  return (
+    <div className="h-full flex flex-col">
+      <div className="px-4 pt-2 pb-3">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Find a place to eat</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {location.lat === DEFAULT_LOCATION.lat && location.lng === DEFAULT_LOCATION.lng
+            ? 'Showing restaurants in New York' 
+            : 'Restaurants near you'}
+        </p>
+      </div>
+
+      {/* Search Bar */}
+      <div className="px-4 pb-3 sticky top-0 bg-white dark:bg-gray-900 z-10 pt-2">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Search for restaurants, cuisines..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Picnik Modal */}
+      {showPicnikModal && selectedRestaurant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {step === 'camera' && 'Take a Picnik Selfie'}
+                {step === 'preview' && 'Preview Photo'}
+                {step === 'details' && 'Picnik Details'}
+              </h3>
+              <button 
+                onClick={() => setShowPicnikModal(false)}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              {step === 'camera' && (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-full p-4 mb-6">
+                    <CameraIcon className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
+                    Take a photo of yourself to let friends know you're at {selectedRestaurant.name}
+                  </p>
+                  <button
+                    onClick={handleTakePhoto}
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                  >
+                    Take Photo
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                  />
+                </div>
+              )}
+
+              {step === 'preview' && image && (
+                <div className="space-y-4">
+                  <div className="relative rounded-lg overflow-hidden bg-black">
+                    <img
+                      src={image}
+                      alt="Preview"
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleRetake}
+                      className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Retake
+                    </button>
+                    <button
+                      onClick={handleContinue}
+                      className="flex-1 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {step === 'details' && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Restaurant
+                    </h4>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {selectedRestaurant.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {selectedRestaurant.address}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Invite Friends
+                      </h4>
+                      <span className="text-xs text-blue-500 dark:text-blue-400">
+                        {friends.length} selected
+                      </span>
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {[
+                        { id: '1', name: 'Alex Johnson', avatar: 'https://randomuser.me/api/portraits/men/1.jpg' },
+                        { id: '2', name: 'Sarah Williams', avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
+                        { id: '3', name: 'Michael Chen', avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
+                        { id: '4', name: 'Emily Davis', avatar: 'https://randomuser.me/api/portraits/women/2.jpg' },
+                      ].map((friend) => (
+                        <div
+                          key={friend.id}
+                          className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
+                          onClick={() => toggleFriend(friend.id)}
+                        >
+                          <img
+                            src={friend.avatar}
+                            alt={friend.name}
+                            className="w-10 h-10 rounded-full mr-3"
+                          />
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {friend.name}
+                          </span>
+                          <div 
+                            className="ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                            style={{
+                              borderColor: friends.includes(friend.id) ? '#60a5fa' : '#d1d5db',
+                              backgroundColor: friends.includes(friend.id) ? '#60a5fa' : 'transparent'
+                            }}
+                          >
+                            {friends.includes(friend.id) && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSubmitPicnik}
+                    disabled={friends.length === 0}
+                    className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-colors ${
+                      friends.length > 0
+                        ? 'bg-blue-500 hover:bg-blue-600'
+                        : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+                    }`}
+                  >
+                    Start Picnik
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

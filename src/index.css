@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-background: #F7F7F7;
+    --color-text: #333333;
+    --color-border: #E5E7EB;
+    --color-card: #FFFFFF;
+    --color-input: #F3F4F6;
+  }
+
+  .dark {
+    --color-background: #111827;
+    --color-text: #F9FAFB;
+    --color-border: #374151;
+    --color-card: #1F2937;
+    --color-input: #374151;
+  }
+
+  html {
+    height: 100%;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  #root {
+    max-width: 28rem;
+    margin-left: auto;
+    margin-right: auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    max-height: 100vh;
+    width: 100%;
+  }
+
+  .dark #root {
+    background-color: #1F2937;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: #F3F4F6;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background-color: #1F2937;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #D1D5DB;
+    border-radius: 9999px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: #4B5563;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #9CA3AF;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: #6B7280;
+  }
+  
+  /* Smooth transitions for theme changes */
+  * {
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+  
+  /* Form elements */
+  input, textarea, select {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #D1D5DB;
+    background-color: white;
+    color: #111827;
+  }
+  
+  .dark input, .dark textarea, .dark select {
+    border-color: #4B5563;
+    background-color: #1F2937;
+    color: #F9FAFB;
+  }
+  
+  /* Buttons */
+  .btn-primary {
+    background-color: #FF6B6B;
+    color: white;
+    font-weight: 500;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-primary:hover {
+    background-color: #FF3B3B;
+  }
+  
+  .btn-secondary {
+    background-color: #4ECDC4;
+    color: white;
+    font-weight: 500;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #37B8AF;
+  }
+  
+  /* Cards */
+  .card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    transition: background-color 0.2s;
+  }
+  
+  .dark .card {
+    background-color: #1F2937;
+  }
+  
+  /* Inputs */
+  .input-group {
+    margin-bottom: 1rem;
+  }
+  
+  .input-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+  }
+  
+  .dark .input-label {
+    color: #D1D5DB;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #D1D5DB;
+    background-color: white;
+    color: #111827;
+  }
+  
+  .dark .input-field {
+    border-color: #4B5563;
+    background-color: #1F2937;
+    color: #F9FAFB;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: #FF6B6B;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+  }
+}
+
+/* Add these utility classes manually since we can't use @apply */
+.bg-primary-400 {
+  background-color: #FF6B6B;
+}
+
+.hover\:bg-primary-500:hover {
+  background-color: #FF3B3B;
+}
+
+.dark .dark\:bg-primary-500 {
+  background-color: #FF3B3B;
+}
+
+.dark .dark\:hover\:bg-primary-600:hover {
+  background-color: #F31515;
+}
+
+.text-white {
+  color: white;
+}
