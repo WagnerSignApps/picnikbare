@@ -1,15 +1,767 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#FF6B6B">
-    <title>Picnik - Eat Out With Friends</title>
-    <meta name="description" content="Plan your next meal out with friends using Picnik">
-  </head>
-  <body class="bg-gray-50">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PicnicPal - Social Dining Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'picnic-primary': '#FF6B6B',
+                        'picnic-secondary': '#4ECDC4',
+                        'picnic-accent': '#FFD166',
+                        'picnic-dark': '#1A535C',
+                        'picnic-light': '#F7FFF7'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f9ff;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+        
+        .dark body {
+            background-color: #1a202c;
+        }
+        
+        .page-transition {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #FF6B6B;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .picnic-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .picnic-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .weather-icon {
+            font-size: 2.5rem;
+            color: #4ECDC4;
+        }
+        
+        .friend-avatar {
+            transition: transform 0.2s ease;
+        }
+        
+        .friend-avatar:hover {
+            transform: scale(1.1);
+        }
+        
+        .restaurant-card {
+            transition: all 0.3s ease;
+        }
+        
+        .restaurant-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .camera-preview {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        }
+        
+        .flash {
+            animation: flash 0.5s;
+        }
+        
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        .notification-toast {
+            animation: slideIn 0.3s forwards, fadeOut 0.3s forwards 2.7s;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-picnic-light min-h-screen flex flex-col">
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="notification-toast fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-picnic-dark text-white px-6 py-3 rounded-full shadow-lg z-50 hidden">
+        <i class="fas fa-bell mr-2"></i>
+        <span id="notification-text">New picnic started!</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-picnic-primary text-white py-4 px-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center">
+            <i class="fas fa-utensils text-2xl mr-2"></i>
+            <h1 class="text-xl font-bold">PicnicPal</h1>
+        </div>
+        <div class="flex items-center">
+            <button id="weather-btn" class="mr-4">
+                <i class="fas fa-sun weather-icon"></i>
+            </button>
+            <button id="notifications-btn" class="relative mr-4">
+                <i class="fas fa-bell text-xl"></i>
+                <span id="notification-badge" class="notification-badge hidden">3</span>
+            </button>
+            <button id="settings-btn">
+                <i class="fas fa-cog text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto pb-16">
+        <!-- Home Page -->
+        <div id="home-page" class="page-transition p-4">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-picnic-dark mb-3">Today's Weather</h2>
+                <div class="bg-white rounded-xl shadow-md p-4 flex items-center">
+                    <div class="flex-1">
+                        <div class="text-3xl font-bold text-picnic-primary">72°F</div>
+                        <div class="text-gray-600">Sunny with a chance of deliciousness</div>
+                        <div class="text-sm text-gray-500 mt-1">Perfect picnic weather!</div>
+                    </div>
+                    <i class="fas fa-sun weather-icon"></i>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold text-picnic-dark">Active Picnics</h2>
+                    <span class="bg-picnic-accent text-picnic-dark px-2 py-1 rounded-full text-xs font-bold">3 Active</span>
+                </div>
+                
+                <!-- Active Picnics -->
+                <div id="active-picnics" class="space-y-4">
+                    <!-- Picnic cards will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Friends Page -->
+        <div id="friends-page" class="page-transition hidden p-4">
+            <h2 class="text-xl font-bold text-picnic-dark mb-4">Your Picnic Pals</h2>
+            
+            <div class="mb-4">
+                <div class="relative">
+                    <input type="text" placeholder="Search friends..." class="w-full bg-white rounded-full py-2 px-4 pl-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-picnic-secondary">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div id="friends-list" class="grid grid-cols-3 gap-4">
+                <!-- Friends will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Restaurants Page -->
+        <div id="restaurants-page" class="page-transition hidden p-4">
+            <h2 class="text-xl font-bold text-picnic-dark mb-4">Nearby Restaurants</h2>
+            
+            <div class="mb-4">
+                <div class="relative">
+                    <input type="text" placeholder="Search restaurants..." class="w-full bg-white rounded-full py-2 px-4 pl-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-picnic-secondary">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div id="restaurants-list" class="space-y-4">
+                <!-- Restaurants will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings-page" class="page-transition hidden p-4">
+            <h2 class="text-xl font-bold text-picnic-dark mb-6 dark:text-white">Settings</h2>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-4">
+                <h3 class="font-bold text-picnic-dark dark:text-white mb-3">Appearance</h3>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-600 dark:text-gray-300">Dark Mode</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-picnic-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-picnic-primary"></div>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                <h3 class="font-bold text-picnic-dark dark:text-white mb-3">Account</h3>
+                <button class="w-full py-2 text-picnic-primary dark:text-picnic-accent font-medium">
+                    Log Out
+                </button>
+            </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profile-page" class="page-transition hidden p-4">
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 mb-4 flex items-center justify-center overflow-hidden">
+                    <i class="fas fa-user text-4xl text-gray-400"></i>
+                </div>
+                <h2 class="text-xl font-bold text-picnic-dark dark:text-white">Alex Johnson</h2>
+                <p class="text-gray-600 dark:text-gray-300">@alexjohnson</p>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-4">
+                <h3 class="font-bold text-picnic-dark dark:text-white mb-3">Your Picnics</h3>
+                <div class="flex justify-between text-center">
+                    <div>
+                        <div class="text-xl font-bold text-picnic-primary dark:text-picnic-accent">12</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Hosted</div>
+                    </div>
+                    <div>
+                        <div class="text-xl font-bold text-picnic-primary dark:text-picnic-accent">24</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Joined</div>
+                    </div>
+                    <div>
+                        <div class="text-xl font-bold text-picnic-primary dark:text-picnic-accent">36</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Total</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                <h3 class="font-bold text-picnic-dark dark:text-white mb-3">About</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-4">Food enthusiast and picnic lover. Always looking for new dining experiences!</p>
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-map-marker-alt mr-2"></i>
+                        <span>San Francisco, CA</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        <span>Joined June 2023</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Page -->
+        <div id="camera-page" class="page-transition hidden">
+            <div class="camera-preview h-screen flex flex-col">
+                <div class="flex justify-between items-center p-4 text-white">
+                    <button id="close-camera" class="text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <h2 class="text-xl font-bold">Start a Picnic</h2>
+                    <div class="w-6"></div> <!-- Spacer for balance -->
+                </div>
+                
+                <div class="flex-1 flex flex-col items-center justify-center">
+                    <div class="bg-gray-200 border-2 border-dashed rounded-xl w-64 h-64 flex items-center justify-center mb-6">
+                        <i class="fas fa-camera text-4xl text-gray-400"></i>
+                    </div>
+                    <p class="text-white text-center mb-6 px-4">Take a photo of your food to start a picnic!</p>
+                    
+                    <button id="take-photo-btn" class="bg-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg mb-6">
+                        <div class="bg-picnic-primary rounded-full w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-camera text-white"></i>
+                        </div>
+                    </button>
+                    
+                    <button id="upload-photo-btn" class="text-white">
+                        <i class="fas fa-upload mr-2"></i>Upload Photo Instead
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 fixed bottom-0 w-full flex justify-around py-3 shadow-lg">
+        <button data-page="home-page" class="nav-btn active-nav flex flex-col items-center text-picnic-primary dark:text-picnic-accent">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-xs mt-1">Home</span>
+        </button>
+        <button data-page="friends-page" class="nav-btn flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-user-friends text-xl"></i>
+            <span class="text-xs mt-1">Friends</span>
+        </button>
+        <button data-page="restaurants-page" class="nav-btn flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-utensils text-xl"></i>
+            <span class="text-xs mt-1">Restaurants</span>
+        </button>
+        <button data-page="profile-page" class="nav-btn flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-user text-xl"></i>
+            <span class="text-xs mt-1">Profile</span>
+        </button>
+    </nav>
+
+    <script>
+        // App State
+        const state = {
+            currentPage: 'home-page',
+            activePicnics: [],
+            friends: [],
+            restaurants: [],
+            notifications: [
+                { id: 1, text: "Sarah started a picnic at Bella Italia!", read: false },
+                { id: 2, text: "Mike joined your picnic!", read: false },
+                { id: 3, text: "New restaurant opened nearby", read: false }
+            ],
+            currentUser: {
+                id: 1,
+                name: "Alex Johnson",
+                avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+            }
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for saved dark mode preference
+            const darkModeEnabled = localStorage.getItem('darkMode') === 'enabled';
+            if (darkModeEnabled || (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('dark-mode-toggle').checked = darkModeEnabled;
+            }
+            
+            // Generate sample data
+            generateSampleData();
+            
+            // Render initial content
+            renderActivePicnics();
+            renderFriends();
+            renderRestaurants();
+            updateNotificationBadge();
+            
+            // Setup navigation
+            setupNavigation();
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const html = document.documentElement;
+            
+            if (darkModeToggle.checked) {
+                html.classList.add('dark');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                html.classList.remove('dark');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+            
+            // Force a reflow to ensure transitions work
+            document.body.offsetHeight;
+        }
+
+        // Generate sample data
+        function generateSampleData() {
+            // Sample friends
+            state.friends = [
+                { id: 1, name: "Sarah Miller", avatar: "https://randomuser.me/api/portraits/women/44.jpg", online: true },
+                { id: 2, name: "Mike Chen", avatar: "https://randomuser.me/api/portraits/men/22.jpg", online: true },
+                { id: 3, name: "Emma Davis", avatar: "https://randomuser.me/api/portraits/women/68.jpg", online: false },
+                { id: 4, name: "James Wilson", avatar: "https://randomuser.me/api/portraits/men/64.jpg", online: true },
+                { id: 5, name: "Sophia Brown", avatar: "https://randomuser.me/api/portraits/women/65.jpg", online: false },
+                { id: 6, name: "Daniel Taylor", avatar: "https://randomuser.me/api/portraits/men/57.jpg", online: true }
+            ];
+            
+            // Sample restaurants
+            state.restaurants = [
+                { id: 1, name: "Bella Italia", type: "Italian", rating: 4.5, distance: "0.5 miles", image: "italian.jpg" },
+                { id: 2, name: "Sushi Palace", type: "Japanese", rating: 4.7, distance: "0.8 miles", image: "sushi.jpg" },
+                { id: 3, name: "Burger Haven", type: "American", rating: 4.2, distance: "1.2 miles", image: "burger.jpg" },
+                { id: 4, name: "Taco Fiesta", type: "Mexican", rating: 4.4, distance: "0.9 miles", image: "taco.jpg" },
+                { id: 5, name: "Green Leaf Cafe", type: "Vegetarian", rating: 4.6, distance: "1.5 miles", image: "salad.jpg" },
+                { id: 6, name: "Seafood Delight", type: "Seafood", rating: 4.3, distance: "2.1 miles", image: "seafood.jpg" }
+            ];
+            
+            // Sample active picnics
+            state.activePicnics = [
+                {
+                    id: 1,
+                    restaurant: state.restaurants[0],
+                    startedBy: state.friends[0],
+                    startedAt: "2 hours ago",
+                    participants: [state.friends[0], state.friends[1], state.friends[3]],
+                    image: "food1.jpg"
+                },
+                {
+                    id: 2,
+                    restaurant: state.restaurants[2],
+                    startedBy: state.currentUser,
+                    startedAt: "1 hour ago",
+                    participants: [state.currentUser, state.friends[4]],
+                    image: "food2.jpg"
+                },
+                {
+                    id: 3,
+                    restaurant: state.restaurants[4],
+                    startedBy: state.friends[5],
+                    startedAt: "30 minutes ago",
+                    participants: [state.friends[5], state.friends[2]],
+                    image: "food3.jpg"
+                }
+            ];
+        }
+
+        // Setup navigation
+        function setupNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetPage = button.getAttribute('data-page');
+                    showPage(targetPage);
+                    
+                    // Update active nav button
+                    navButtons.forEach(btn => {
+                        btn.classList.remove('text-picnic-primary');
+                        btn.classList.add('text-gray-500');
+                    });
+                    button.classList.remove('text-gray-500');
+                    button.classList.add('text-picnic-primary');
+                });
+            });
+        }
+
+        // Show a specific page
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-transition').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Show the requested page
+            document.getElementById(pageId).classList.remove('hidden');
+            state.currentPage = pageId;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Close camera button
+            document.getElementById('close-camera').addEventListener('click', () => {
+                showPage(state.currentPage);
+            });
+            
+            // Take photo button
+            document.getElementById('take-photo-btn').addEventListener('click', () => {
+                // Flash effect
+                const flash = document.createElement('div');
+                flash.className = 'flash fixed inset-0 bg-white z-40';
+                document.body.appendChild(flash);
+                
+                setTimeout(() => {
+                    flash.remove();
+                    
+                    // Simulate photo taken
+                    const newPicnic = {
+                        id: Date.now(),
+                        restaurant: state.selectedRestaurant,
+                        startedBy: state.currentUser,
+                        startedAt: "Just now",
+                        participants: [state.currentUser],
+                        image: "new-food.jpg"
+                    };
+                    
+                    state.activePicnics.unshift(newPicnic);
+                    renderActivePicnics();
+                    
+                    // Show notification
+                    showNotification(`You started a picnic at ${state.selectedRestaurant.name}!`);
+                    
+                    // Go back to home page
+                    showPage('home-page');
+                    
+                    // Update active nav button
+                    document.querySelector('.nav-btn[data-page="home-page"]').click();
+                    
+                }, 500);
+            });
+            
+            // Upload photo button
+            document.getElementById('upload-photo-btn').addEventListener('click', () => {
+                // Simulate photo upload
+                const newPicnic = {
+                    id: Date.now(),
+                    restaurant: state.selectedRestaurant,
+                    startedBy: state.currentUser,
+                    startedAt: "Just now",
+                    participants: [state.currentUser],
+                    image: "uploaded-food.jpg"
+                };
+                
+                state.activePicnics.unshift(newPicnic);
+                renderActivePicnics();
+                
+                // Show notification
+                showNotification(`You started a picnic at ${state.selectedRestaurant.name}!`);
+                
+                // Go back to home page
+                showPage('home-page');
+                
+                // Update active nav button
+                document.querySelector('.nav-btn[data-page="home-page"]').click();
+            });
+            
+            // Settings button
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                showPage('settings-page');
+            });
+
+            // Dark mode toggle
+            document.getElementById('dark-mode-toggle').addEventListener('change', toggleDarkMode);
+
+            // Notifications button
+            document.getElementById('notifications-btn').addEventListener('click', () => {
+                // Mark notifications as read
+                state.notifications.forEach(notif => notif.read = true);
+                updateNotificationBadge();
+                
+                // Show notification toast
+                showNotification("Notifications marked as read");
+            });
+        }
+
+        // Render active picnics
+        function renderActivePicnics() {
+            const container = document.getElementById('active-picnics');
+            container.innerHTML = '';
+            
+            state.activePicnics.forEach(picnic => {
+                const isCurrentUserHost = picnic.startedBy.id === state.currentUser.id;
+                
+                const card = document.createElement('div');
+                card.className = 'picnic-card bg-white rounded-xl shadow-md overflow-hidden';
+                card.innerHTML = `
+                    <div class="relative">
+                        <div class="h-40 bg-gray-200 flex items-center justify-center">
+                            <i class="fas fa-utensils text-4xl text-gray-400"></i>
+                        </div>
+                        <div class="absolute top-3 right-3 bg-picnic-accent text-picnic-dark px-2 py-1 rounded-full text-xs font-bold">
+                            ${picnic.participants.length} ${picnic.participants.length === 1 ? 'person' : 'people'}
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg text-picnic-dark">${picnic.restaurant.name}</h3>
+                                <p class="text-gray-600 text-sm">${picnic.startedBy.name} • ${picnic.startedAt}</p>
+                            </div>
+                            <div class="flex">
+                                ${isCurrentUserHost ? `
+                                    <button class="end-picnic-btn bg-picnic-primary text-white rounded-full w-8 h-8 flex items-center justify-center ml-2" data-id="${picnic.id}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : `
+                                    <button class="leave-picnic-btn bg-gray-200 text-gray-700 rounded-full w-8 h-8 flex items-center justify-center ml-2" data-id="${picnic.id}">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center mt-3">
+                            <div class="flex -space-x-2">
+                                ${picnic.participants.slice(0, 3).map(participant => `
+                                    <div class="relative">
+                                        <div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white overflow-hidden">
+                                            <div class="bg-gray-200 w-full h-full flex items-center justify-center">
+                                                <i class="fas fa-user text-gray-400"></i>
+                                            </div>
+                                        </div>
+                                        ${participant.online ? `
+                                            <div class="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                                ${picnic.participants.length > 3 ? `
+                                    <div class="w-8 h-8 rounded-full bg-picnic-secondary text-white flex items-center justify-center text-xs font-bold border-2 border-white">
+                                        +${picnic.participants.length - 3}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <button class="join-picnic-btn ml-auto bg-picnic-secondary text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Join Picnic
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+            
+            // Add event listeners to picnic action buttons
+            document.querySelectorAll('.end-picnic-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const picnicId = parseInt(e.currentTarget.getAttribute('data-id'));
+                    endPicnic(picnicId);
+                });
+            });
+            
+            document.querySelectorAll('.leave-picnic-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const picnicId = parseInt(e.currentTarget.getAttribute('data-id'));
+                    leavePicnic(picnicId);
+                });
+            });
+            
+            document.querySelectorAll('.join-picnic-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    showNotification("You joined the picnic!");
+                });
+            });
+        }
+
+        // End a picnic
+        function endPicnic(picnicId) {
+            state.activePicnics = state.activePicnics.filter(p => p.id !== picnicId);
+            renderActivePicnics();
+            showNotification("Picnic ended successfully");
+        }
+
+        // Leave a picnic
+        function leavePicnic(picnicId) {
+            const picnic = state.activePicnics.find(p => p.id === picnicId);
+            if (picnic) {
+                picnic.participants = picnic.participants.filter(p => p.id !== state.currentUser.id);
+                
+                // If no participants left, remove picnic
+                if (picnic.participants.length === 0) {
+                    state.activePicnics = state.activePicnics.filter(p => p.id !== picnicId);
+                }
+                
+                renderActivePicnics();
+                showNotification("You left the picnic");
+            }
+        }
+
+        // Render friends
+        function renderFriends() {
+            const container = document.getElementById('friends-list');
+            container.innerHTML = '';
+            
+            state.friends.forEach(friend => {
+                const friendElement = document.createElement('div');
+                friendElement.className = 'text-center';
+                friendElement.innerHTML = `
+                    <div class="friend-avatar relative mx-auto mb-2">
+                        <div class="w-20 h-20 rounded-full bg-gray-200 border-2 ${friend.online ? 'border-green-500' : 'border-gray-300'} overflow-hidden">
+                            <div class="bg-gray-200 w-full h-full flex items-center justify-center">
+                                <i class="fas fa-user text-gray-400 text-3xl"></i>
+                            </div>
+                        </div>
+                        ${friend.online ? `
+                            <div class="absolute bottom-1 right-1 w-3 h-3 bg-green-500 rounded-full border border-white"></div>
+                        ` : ''}
+                    </div>
+                    <div class="font-medium text-picnic-dark">${friend.name}</div>
+                    <div class="text-xs text-gray-500">${friend.online ? 'Online' : 'Offline'}</div>
+                `;
+                
+                container.appendChild(friendElement);
+            });
+        }
+
+        // Render restaurants
+        function renderRestaurants() {
+            const container = document.getElementById('restaurants-list');
+            container.innerHTML = '';
+            
+            state.restaurants.forEach(restaurant => {
+                const restaurantElement = document.createElement('div');
+                restaurantElement.className = 'restaurant-card bg-white rounded-xl shadow-md overflow-hidden';
+                restaurantElement.innerHTML = `
+                    <div class="flex">
+                        <div class="w-1/3 bg-gray-200 flex items-center justify-center">
+                            <i class="fas fa-utensils text-3xl text-gray-400"></i>
+                        </div>
+                        <div class="flex-1 p-4">
+                            <h3 class="font-bold text-lg text-picnic-dark mb-1">${restaurant.name}</h3>
+                            <div class="flex items-center mb-2">
+                                <span class="text-yellow-500 mr-1">
+                                    <i class="fas fa-star"></i>
+                                </span>
+                                <span class="text-sm font-medium">${restaurant.rating}</span>
+                                <span class="mx-2 text-gray-300">•</span>
+                                <span class="text-sm text-gray-600">${restaurant.distance}</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-3">${restaurant.type}</div>
+                            <button class="start-picnic-btn w-full bg-picnic-primary text-white py-2 rounded-lg font-medium" data-id="${restaurant.id}">
+                                Start Picnic
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(restaurantElement);
+            });
+            
+            // Add event listeners to start picnic buttons
+            document.querySelectorAll('.start-picnic-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const restaurantId = parseInt(e.currentTarget.getAttribute('data-id'));
+                    const restaurant = state.restaurants.find(r => r.id === restaurantId);
+                    if (restaurant) {
+                        state.selectedRestaurant = restaurant;
+                        showPage('camera-page');
+                    }
+                });
+            });
+        }
+
+        // Update notification badge
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notification-badge');
+            const unreadCount = state.notifications.filter(n => !n.read).length;
+            
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Show notification toast
+        function showNotification(text) {
+            const toast = document.getElementById('notification-toast');
+            const textElement = document.getElementById('notification-text');
+            
+            textElement.textContent = text;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=samw135/Picnik" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
 </html>
