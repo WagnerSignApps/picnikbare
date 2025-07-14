@@ -32,7 +32,13 @@ export default defineConfig({
         manualChunks: {
           'vendor-mui': ['@mui/material', '@emotion/react', '@emotion/styled'],
           'vendor-mui-icons': usedIcons.map(icon => `@mui/icons-material/${icon}`),
-          'vendor-firebase': ['firebase', '@firebase/*'],
+          'vendor-firebase': [
+  'firebase/app',
+  'firebase/auth',
+  'firebase/firestore',
+  'firebase/storage',
+  // add more submodules if you use them
+],
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
         },
       },
