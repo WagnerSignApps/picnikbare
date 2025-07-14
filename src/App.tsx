@@ -77,8 +77,10 @@ function App() {
                     <Route path="/profile" element={<ProfileTab />} />
                   </Route>
                 </Route>
-                {/* Redirect to home if no match */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* Redirect root to login */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                {/* Redirect to login if no match */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </AuthUserProvider>
           </NotificationProvider>
