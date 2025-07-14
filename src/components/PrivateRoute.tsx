@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthUser } from '../contexts/AuthUserContext';
 import LoadingSpinner from './LoadingSpinner';
 
 interface PrivateRouteProps {
@@ -7,7 +7,7 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { user, loading } = useAuthUser();
   const location = useLocation();
 
   if (loading) {

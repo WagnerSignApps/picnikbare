@@ -9,7 +9,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthUser } from '../contexts/AuthUserContext';
 import { 
   sendFriendRequest as sendFriendRequestApi,
   respondToFriendRequest,
@@ -150,7 +150,7 @@ const FriendItem = ({ friend, currentUserId, onAction, isProcessing }: FriendIte
 );
 
 export const FriendsTab = () => {
-  const { currentUser } = useAuth();
+  const { user, loading } = useAuthUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
   const [friends, setFriends] = useState<Friend[]>([]);

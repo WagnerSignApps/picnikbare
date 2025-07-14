@@ -2,7 +2,7 @@ import { useState, useCallback, Fragment } from 'react';
 import { Badge, IconButton, Menu, MenuItem, Typography, Box, Divider, Button } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthUser } from '../../contexts/AuthUserContext';
 import { useNavigate } from 'react-router-dom';
 import { playSound } from '../../utils/sound';
 import { Notification } from '../../firebase/notifications';
@@ -10,7 +10,7 @@ import { Notification } from '../../firebase/notifications';
 // Using Notification type from firebase/notifications
 
 export const NotificationBell = () => {
-  const { currentUser } = useAuth();
+  const { user, loading } = useAuthUser();
   const { notifications, markAsRead, unreadCount } = useNotifications();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);

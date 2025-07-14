@@ -1,10 +1,10 @@
 import { Routes, Route, useLocation, Link, Navigate, Outlet } from 'react-router-dom';
 import { HomeIcon, UserGroupIcon, UserIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, UserGroupIcon as UserGroupIconSolid, UserIcon as UserIconSolid, MapPinIcon as MapPinIconSolid } from '@heroicons/react/24/solid';
-import { AuthProvider } from './contexts/AuthContext';
+
 import { FirebaseProvider } from './contexts/FirebaseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { useAuth } from './contexts/AuthContext';
+import { useAuthUser } from './contexts/AuthUserContext';
 import { AuthUserProvider } from './contexts/AuthUserContext';
 import AuthPage from './pages/AuthPage';
 import { NotificationBell } from './components/notifications/NotificationBell';
@@ -45,7 +45,7 @@ function App() {
   return (
     <ThemeProvider>
       <FirebaseProvider>
-        <AuthProvider>
+        
           <NotificationProvider>
             <AuthUserProvider>
               <Routes>
@@ -84,14 +84,14 @@ function App() {
               </Routes>
             </AuthUserProvider>
           </NotificationProvider>
-        </AuthProvider>
+        
       </FirebaseProvider>
     </ThemeProvider>
   );
 }
 
 function Header() {
-  const { currentUser } = useAuth();
+  const { user } = useAuthUser();
   
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm z-10 sticky top-0">

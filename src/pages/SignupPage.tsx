@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthUser } from '../contexts/AuthUserContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export const SignupPage = () => {
@@ -10,7 +10,8 @@ export const SignupPage = () => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { user, loading } = useAuthUser();
+// TODO: Replace signUp logic with real Firebase signUp if needed
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

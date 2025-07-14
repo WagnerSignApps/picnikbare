@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthUser } from '../contexts/AuthUserContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { collection, doc, setDoc, deleteDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { useLocation } from 'react-router-dom';
@@ -59,7 +59,7 @@ export function StartPicnikTab() {
   const [errorState, setErrorState] = useState<string | null>(null);
   
   const { db } = useFirebase();
-  const { currentUser } = useAuth();
+  const { user, loading } = useAuthUser();
   
   // Get weather emoji and face based on condition
   const getWeatherEmoji = (condition: string) => {
