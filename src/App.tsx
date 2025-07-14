@@ -97,7 +97,7 @@ function Header() {
     <header className="bg-white dark:bg-gray-800 shadow-sm z-10 sticky top-0">
       <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold text-red-500">Picnik</h1>
-        {currentUser && (
+        {user && (
           <div className="flex items-center space-x-2">
             <NotificationBell />
           </div>

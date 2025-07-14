@@ -13,15 +13,15 @@ import { NotificationPreferences } from '../components/notifications/Notificatio
 interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: UserProfile;
+  profile: UserProfile | null;
   onSave: (updatedUser: Partial<UserProfile>) => void;
 }
 
-const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, user, onSave }) => {
+const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, profile, onSave }) => {
   const [formData, setFormData] = useState({
-    displayName: user.displayName,
-    username: user.username,
-    bio: user.bio,
+    displayName: (profile && profile.displayName) || '',
+    username: (profile && profile.username) || '',
+    bio: (profile && profile.bio) || '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -160,6 +160,8 @@ interface Picnic {
   participants: string[];
 }
 
+import { useAuthUser } from '../contexts/AuthUserContext';
+
 export function ProfileTab() {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode, temperatureUnit, toggleTemperatureUnit } = useTheme();
@@ -172,7 +174,8 @@ export function ProfileTab() {
   
   // State declarations - all hooks must be called in the same order on every render
   const [activeTab, setActiveTab] = useState<'picniks' | 'saved' | 'reviews'>('picniks');
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { user } = useAuthUser();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [picnics, setPicnics] = useState<Picnic[]>([]);
   const [savedRestaurants, setSavedRestaurants] = useState<any[]>([]);
   const [isPicnicsLoading, setIsPicnicsLoading] = useState(true);
@@ -199,13 +202,13 @@ export function ProfileTab() {
 
   // Load saved restaurants
   useEffect(() => {
-    if (!auth?.currentUser) return;
+    if (!auth?.user) return;
     
     const loadSavedRestaurants = async () => {
       setIsLoadingSaved(true);
       try {
         // Use the user's savedRestaurants subcollection
-        const savedRestaurantsRef = collection(db, 'users', auth.currentUser!.uid, 'savedRestaurants');
+        const savedRestaurantsRef = collection(db, 'users', user!.uid, 'savedRestaurants');
         const savedQuery = query(
           savedRestaurantsRef,
           orderBy('createdAt', 'desc')
@@ -256,14 +259,14 @@ export function ProfileTab() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (!auth.currentUser) {
+        if (!user) {
           setIsUserLoading(false);
           return;
         }
 
-        const userDoc = await getDocument<UserProfile>('users', auth.currentUser.uid);
+        const userDoc = await getDocument<UserProfile>('users', user.uid);
         if (userDoc) {
-          setUser({
+          setProfile({
             displayName: userDoc.displayName || 'User',
             username: userDoc.username || `@user${Math.floor(Math.random() * 1000)}`,
             bio: userDoc.bio || 'Food lover and Picnik enthusiast! 🍔🍕🌮',
@@ -284,26 +287,16 @@ export function ProfileTab() {
     };
 
     fetchUserData();
-  }, [auth.currentUser, getDocument]);
+  }, [user, getDocument]);
 
   // Fallback user data if not logged in or data not found
-  const currentUser = user || {
-    displayName: 'Guest User',
-    username: '@guest',
-    bio: 'Join us to start your Picnik journey!',
-    photoURL: 'https://ui-avatars.com/api/?name=Guest',
-    stats: {
-      picniks: 0,
-      friends: 0,
-      reviews: 0,
-    },
-  };
+  
 
   const handleUpdateProfile = async (updatedData: Partial<UserProfile>) => {
-    if (!auth.currentUser?.uid) return;
+    if (!user?.uid) return;
     
     try {
-      await updateDocument('users', auth.currentUser.uid, updatedData);
+      await updateDocument('users', user.uid, updatedData);
       setUser(prev => prev ? { ...prev, ...updatedData } : null);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -313,12 +306,12 @@ export function ProfileTab() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !auth.currentUser?.uid) return;
+    if (!file || !user?.uid) return;
 
     setIsUploading(true);
     try {
-      const downloadURL = await uploadFile(`profilePics/${auth.currentUser.uid}`, file);
-      await updateDocument('users', auth.currentUser.uid, { photoURL: downloadURL });
+      const downloadURL = await uploadFile(`profilePics/${user.uid}`, file);
+      await updateDocument('users', user.uid, { photoURL: downloadURL });
       setUser(prev => prev ? { ...prev, photoURL: downloadURL } : null);
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -343,7 +336,7 @@ export function ProfileTab() {
 
   // Handle unsaving a restaurant
   const handleUnsaveRestaurant = async (restaurantId: string) => {
-    if (!auth.currentUser) return;
+    if (!user) return;
     
     try {
       // Remove from Firestore
@@ -362,7 +355,7 @@ export function ProfileTab() {
   // Fetch user's picnics
   useEffect(() => {
     const fetchUserPicnics = async () => {
-      if (!auth.currentUser) {
+      if (!user) {
         setIsPicnicsLoading(false);
         return;
       }
@@ -372,17 +365,17 @@ export function ProfileTab() {
         const userPicnics: Picnic[] = [];
         
         // Only fetch picnics if we have a valid user
-        if (auth.currentUser.uid) {
+        if (user.uid) {
           // First, try to get picnics where user is a participant
           const picnicsQuery = query(
             collection(db, 'picnics'),
-            where('participants', 'array-contains', auth.currentUser.uid),
+            where('participants', 'array-contains', user.uid),
             orderBy('createdAt', 'desc')
           );
           
           console.log('Fetching picnics with query:', {
             collection: 'picnics',
-            where: ['participants', 'array-contains', auth.currentUser.uid],
+            where: ['participants', 'array-contains', user.uid],
             orderBy: ['createdAt', 'desc']
           });
           
@@ -430,17 +423,17 @@ export function ProfileTab() {
     };
 
     fetchUserPicnics();
-  }, [auth.currentUser, getDocument, getDocuments]);
+  }, [user, getDocument, getDocuments]);
 
   // Load saved restaurants when the tab changes or user changes
   useEffect(() => {
     const loadSavedRestaurants = async () => {
-      if (activeTab !== 'saved' || !auth.currentUser) return;
+      if (activeTab !== 'saved' || !user) return;
       
       setIsLoadingSaved(true);
       try {
         const savedQuery = query(
-          collection(db, 'users', auth.currentUser.uid, 'savedRestaurants'),
+          collection(db, 'users', user.uid, 'savedRestaurants'),
           orderBy('savedAt', 'desc')
         );
         const snapshot = await getDocs(savedQuery);
@@ -490,7 +483,7 @@ export function ProfileTab() {
     };
 
     loadSavedRestaurants();
-  }, [activeTab, auth.currentUser, db, getDocs, query, where, collection]);
+  }, [activeTab, user, db, getDocs, query, where, collection]);
 
   // Show loading state while data is being fetched
   if (isUserLoading) {
@@ -518,8 +511,13 @@ export function ProfileTab() {
     );
   }
 
-  // Menu items have been moved to the settings popup
-  // Remove the unused menuItems array
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen">
@@ -717,12 +715,12 @@ export function ProfileTab() {
           <div className="flex items-center space-x-6">
             <div className="relative group">
               <img
-                src={currentUser.photoURL}
-                alt={currentUser.displayName}
+                src={profile && profile.photoURL}
+                alt={profile && profile.displayName}
                 className="h-24 w-24 rounded-full border-4 border-white dark:border-gray-700 shadow object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random`;
+                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile && profile.displayName || 'User')}&background=random`;
                 }}
               />
               <button 
@@ -749,9 +747,9 @@ export function ProfileTab() {
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{currentUser.displayName}</h1>
-                  <p className="text-gray-600 dark:text-gray-300">{currentUser.username}</p>
-                  <p className="mt-2 text-gray-700 dark:text-gray-200">{currentUser.bio}</p>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile && profile.displayName}</h1>
+                  <p className="text-gray-600 dark:text-gray-300">{profile && profile.username}</p>
+                  <p className="mt-2 text-gray-700 dark:text-gray-200">{profile && profile.bio}</p>
                 </div>
                 <div className="flex space-x-3">
                   <button 
@@ -765,8 +763,8 @@ export function ProfileTab() {
                     onClick={() => {
                       if (navigator.share) {
                         navigator.share({
-                          title: `Check out ${currentUser.displayName}'s Picnik profile`,
-                          text: `Join ${currentUser.displayName} on Picnik!`,
+                          title: `Check out ${profile && profile.displayName}'s Picnik profile`,
+                          text: `Join ${profile && profile.displayName} on Picnik!`,
                           url: window.location.href,
                         }).catch(console.error);
                       } else {
@@ -784,15 +782,15 @@ export function ProfileTab() {
               
               <div className="flex items-center mt-6 text-sm text-gray-500 dark:text-gray-400 space-x-6">
                 <div className="flex flex-col items-center">
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">{currentUser.stats.picniks}</span>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">{profile && profile.stats.picniks}</span>
                   <span>Picniks</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">{currentUser.stats.friends}</span>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">{profile && profile.stats.friends}</span>
                   <span>Friends</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">{currentUser.stats.reviews}</span>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">{profile && profile.stats.reviews}</span>
                   <span>Reviews</span>
                 </div>
               </div>
@@ -977,7 +975,7 @@ export function ProfileTab() {
       <EditProfileModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        user={currentUser}
+        profile={profile || { displayName: '', username: '', bio: '', stats: { picniks: 0, friends: 0, reviews: 0 } }}
         onSave={handleUpdateProfile}
       />
 

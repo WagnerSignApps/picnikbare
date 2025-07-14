@@ -10,7 +10,7 @@ import { Notification } from '../../firebase/notifications';
 // Using Notification type from firebase/notifications
 
 export const NotificationBell = () => {
-  const { user, loading } = useAuthUser();
+  const { user } = useAuthUser();
   const { notifications, markAsRead, unreadCount } = useNotifications();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export const NotificationBell = () => {
   const notificationCount = unreadCount || 0;
 
   const handleRespondToInvite = useCallback(async (notification: Notification, accept: boolean) => {
-    if (!currentUser?.uid) return;
+    if (!user?.uid) return;
     setIsProcessing(notification.id);
     
     try {
@@ -40,7 +40,7 @@ export const NotificationBell = () => {
     } finally {
       setIsProcessing(null);
     }
-  }, [currentUser, markAsRead, navigate]);
+  }, [user, markAsRead, navigate]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (notification.type === 'picnic_invite') return; // Handled by buttons

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthUser } from '../contexts/AuthUserContext';
+
+import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -9,7 +10,8 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user, loading } = useAuthUser();
+  
+  const { signIn } = useAuth();
 // TODO: Replace signIn logic with real Firebase signIn if needed
   const navigate = useNavigate();
 

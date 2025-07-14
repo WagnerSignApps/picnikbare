@@ -62,13 +62,13 @@ interface Friend extends Omit<UserProfile, 'id'> {
 
 interface FriendItemProps {
   friend: Friend;
-  currentUserId?: string;
+  userId?: string;
   onAction?: (id: string, action: 'accept' | 'decline' | 'remove' | 'add') => void;
   isProcessing?: boolean;
 }
 
 
-const FriendItem = ({ friend, currentUserId, onAction, isProcessing }: FriendItemProps) => (
+const FriendItem = ({ friend, userId, onAction, isProcessing }: FriendItemProps) => (
   <div className="flex items-center p-3 hover:bg-gray-50 rounded-xl transition-colors">
     <div className="relative mr-3">
       {friend.photoURL ? (
@@ -130,7 +130,7 @@ const FriendItem = ({ friend, currentUserId, onAction, isProcessing }: FriendIte
         >
           <ChatBubbleLeftRightIcon className="h-5 w-5" />
         </button>
-        {currentUserId !== friend.id && (
+        {userId !== friend.id && (
           <button 
             onClick={() => onAction?.(friend.id, 'remove')}
             className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
@@ -150,7 +150,7 @@ const FriendItem = ({ friend, currentUserId, onAction, isProcessing }: FriendIte
 );
 
 export const FriendsTab = () => {
-  const { user, loading } = useAuthUser();
+  const { user } = useAuthUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -180,7 +180,7 @@ export const FriendsTab = () => {
   const handleAction = useCallback(async (friendId: string, action: 'accept' | 'decline' | 'remove' | 'add') => {
     const actionKey = `${action}-${friendId}`;
     
-    if (!currentUser?.uid || isProcessing[actionKey]) return;
+    if (!user?.uid || isProcessing[actionKey]) return;
     
     try {
       setIsProcessing(prev => ({ ...prev, [actionKey]: true }));
@@ -194,7 +194,7 @@ export const FriendsTab = () => {
       } else if (action === 'add') {
         // Not used - handled by handleAddFriend
       } else if (action === 'remove') {
-        const response = await removeFriendApi(currentUser.uid, friendId);
+        const response = await removeFriendApi(user.uid, friendId);
         if (response.success) {
           setFriends(prev => prev.filter(friend => friend.id !== friendId));
         }
@@ -207,14 +207,14 @@ export const FriendsTab = () => {
         [actionKey]: false
       }));
     }
-  }, [currentUser?.uid, isProcessing, setFriends, setRawRequests]);
+  }, [user?.uid, isProcessing, setFriends, setRawRequests]);
 
   const handleAddFriend = async () => {
-    if (!email || !currentUser?.uid) return;
+    if (!email || !user?.uid) return;
 
     try {
       setIsProcessing(prev => ({ ...prev, 'sendingRequest': true }));
-      const { success } = await sendFriendRequestApi(currentUser.uid, email);
+      const { success } = await sendFriendRequestApi(user.uid, email);
 
       if (success) {
         setShowAddFriend(false);
@@ -229,7 +229,7 @@ export const FriendsTab = () => {
 
   // Load friends and friend requests
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!user?.uid) return;
 
     const loadData = async () => {
       try {
@@ -238,7 +238,7 @@ export const FriendsTab = () => {
         // Load friends
         const friendsQuery = query(
           collection(db, 'users'),
-          where('friends', 'array-contains', currentUser.uid)
+          where('friends', 'array-contains', user.uid)
         );
         
         const friendsSnapshot = await getDocs(friendsQuery);
@@ -261,7 +261,7 @@ export const FriendsTab = () => {
         // Load friend requests
         const requestsQuery = query(
           collection(db, 'friendRequests'),
-          where('toUserId', '==', currentUser.uid),
+          where('toUserId', '==', user.uid),
           where('status', '==', 'pending')
         );
 
@@ -314,14 +314,14 @@ export const FriendsTab = () => {
     loadData();
     
     // Set up real-time listeners
-    const unsubscribeFriends = setupFriendsListener(currentUser.uid);
-    const unsubscribeRequests = setupRequestsListener(currentUser.uid);
+    const unsubscribeFriends = setupFriendsListener(user.uid);
+    const unsubscribeRequests = setupRequestsListener(user.uid);
 
     return () => {
       if (unsubscribeFriends) unsubscribeFriends();
       if (unsubscribeRequests) unsubscribeRequests();
     };
-  }, [currentUser?.uid]);
+  }, [user?.uid]);
 
   // Set up real-time listener for friends
   const setupFriendsListener = (userId: string) => {
@@ -535,7 +535,7 @@ export const FriendsTab = () => {
                     <FriendItem 
                       key={friend.id} 
                       friend={friend} 
-                      currentUserId={currentUser?.uid}
+                      userId={user?.uid}
                       onAction={handleAction}
                       isProcessing={isProcessing[`remove-${friend.id}`]}
                     />
@@ -570,7 +570,7 @@ export const FriendsTab = () => {
                         requestId: request.id,
                         online: false
                       }}
-                      currentUserId={currentUser?.uid}
+                      userId={user?.uid}
                       onAction={handleFriendAction}
                       isProcessing={isProcessing[`${request.status === 'pending' ? 'accept' : 'remove'}-${request.id}`]}
                     />

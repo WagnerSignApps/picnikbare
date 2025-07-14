@@ -43,16 +43,16 @@ export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequestType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user, loading } = useAuthUser();
+  const { user } = useAuthUser();
 
   // Load friend requests
   useEffect(() => {
     const loadFriendRequests = async () => {
-      if (!currentUser?.uid) return;
+      if (!user?.uid) return;
       
       try {
         setIsLoading(true);
-        const requests = await getUserFriendRequests(currentUser.uid);
+        const requests = await getUserFriendRequests(user.uid);
         setFriendRequests(requests);
       } catch (error) {
         console.error('Error loading friend requests:', error);
@@ -62,7 +62,7 @@ export default function FriendsPage() {
     };
 
     loadFriendRequests();
-  }, [currentUser?.uid]);
+  }, [user?.uid]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
