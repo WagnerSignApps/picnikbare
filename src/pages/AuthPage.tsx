@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { register, login, logout } from "@/lib/auth";
+import { register, login, logout } from "@/services/auth";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
