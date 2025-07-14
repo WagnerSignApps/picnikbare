@@ -36,22 +36,69 @@ interface SavedRestaurant extends Restaurant {
 export const RestaurantsTab = () => {
   const { auth, db, getDocs, collection, query, where, addDoc, deleteDoc } = useFirebase();
   const [searchQuery, setSearchQuery] = useState('');
-  const [restaurants, setRestaurants] = useState<SavedRestaurant[]>([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState<SavedRestaurant[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [savedRestaurants, setSavedRestaurants] = useState<{[key: string]: boolean}>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [radius, setRadius] = useState(1609); // 1 mile in meters
   const [showRadiusMenu, setShowRadiusMenu] = useState(false);
+
+  // Fetch real restaurant data from Google Places API
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    getNearbyRestaurants({ location, radius, keyword: searchQuery })
+      .then((data) => {
+        setRestaurants(data);
+        setFilteredRestaurants(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Failed to load restaurants');
+        setLoading(false);
+      });
+  }, [location, radius, searchQuery]);
   
   // Picnik modal state
   const [showPicnikModal, setShowPicnikModal] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [image, setImage] = useState('');
   const [friends, setFriends] = useState<string[]>([]);
+  const [realFriends, setRealFriends] = useState<{id: string, displayName: string, photoURL?: string}[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<'camera' | 'preview' | 'details'>('camera');
+
+  // Fetch real friends from Firestore when modal opens
+  useEffect(() => {
+    const fetchFriends = async () => {
+      if (showPicnikModal && auth?.currentUser) {
+        try {
+          const friendsQuery = query(
+            collection(db, 'users'),
+            where('friends', 'array-contains', auth.currentUser.uid)
+          );
+          const snapshot = await getDocs(friendsQuery);
+          const friendsList: {id: string, displayName: string, photoURL?: string}[] = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              displayName: data.displayName || data.email || 'Friend',
+              photoURL: data.photoURL,
+            };
+          });
+          setRealFriends(friendsList);
+        } catch (e) {
+          setError('Failed to load friends');
+        }
+      } else {
+        setRealFriends([]);
+      }
+    };
+    fetchFriends();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPicnikModal, auth?.currentUser, db, getDocs]);
 
   const handleStartPicnik = (restaurant: Restaurant) => {
     setSelectedRestaurant(restaurant);
@@ -109,7 +156,7 @@ export const RestaurantsTab = () => {
 
   // Rest of the component code...
   
-  // For now, return a simple loading state
+  // Main UI rendering real restaurants
   return (
     <div className="h-full flex flex-col">
       <div className="px-4 pt-2 pb-3">
@@ -120,6 +167,63 @@ export const RestaurantsTab = () => {
             : 'Restaurants near you'}
         </p>
       </div>
+
+      {/* Loading and error states */}
+      {loading && (
+        <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+          Loading restaurants...
+        </div>
+      )}
+      {error && (
+        <div className="flex-1 flex items-center justify-center text-red-500">
+          {error}
+        </div>
+      )}
+
+      {/* Restaurant List */}
+      {!loading && !error && (
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+          {filteredRestaurants.length === 0 ? (
+            <div className="text-center text-gray-500 dark:text-gray-400">No restaurants found.</div>
+          ) : (
+            filteredRestaurants.map((restaurant) => (
+              <div
+                key={restaurant.place_id}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:space-x-4"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {restaurant.name}
+                    </span>
+                    {restaurant.rating && (
+                      <span className="flex items-center text-yellow-500 ml-2">
+                        <StarIcon className="w-4 h-4 mr-1" />
+                        {restaurant.rating}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {restaurant.vicinity || restaurant.formatted_address}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {getCuisineType(restaurant.types)}
+                    {getPriceLevelString(restaurant.price_level)}
+                  </div>
+                </div>
+                <div className="mt-3 md:mt-0 md:ml-4 flex-shrink-0">
+                  <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                    onClick={() => handleStartPicnik(restaurant)}
+                  >
+                    Start Picnik
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="px-4 pb-3 sticky top-0 bg-white dark:bg-gray-900 z-10 pt-2">
@@ -233,24 +337,25 @@ export const RestaurantsTab = () => {
                       </span>
                     </div>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {[
-                        { id: '1', name: 'Alex Johnson', avatar: 'https://randomuser.me/api/portraits/men/1.jpg' },
-                        { id: '2', name: 'Sarah Williams', avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
-                        { id: '3', name: 'Michael Chen', avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
-                        { id: '4', name: 'Emily Davis', avatar: 'https://randomuser.me/api/portraits/women/2.jpg' },
-                      ].map((friend) => (
+                      {realFriends.map(friend => (
                         <div
                           key={friend.id}
                           className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
                           onClick={() => toggleFriend(friend.id)}
                         >
-                          <img
-                            src={friend.avatar}
-                            alt={friend.name}
-                            className="w-10 h-10 rounded-full mr-3"
-                          />
+                          {friend.photoURL ? (
+                            <img
+                              src={friend.photoURL}
+                              alt={friend.displayName}
+                              className="w-10 h-10 rounded-full mr-3"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                              <span className="text-sm font-medium text-gray-500">{friend.displayName?.[0] || '?'}</span>
+                            </div>
+                          )}
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {friend.name}
+                            {friend.displayName}
                           </span>
                           <div 
                             className="ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
