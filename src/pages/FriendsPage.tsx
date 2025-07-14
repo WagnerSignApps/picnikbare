@@ -3,7 +3,7 @@ import { Box, Container, Typography, Tabs, Tab, CircularProgress } from '@mui/ma
 import { FriendList } from '../components/friends/FriendList';
 import { FriendRequest } from '../components/friends/FriendRequest';
 import type { FriendRequest as FriendRequestType } from '../firebase/db';
-import { useAuthUser } from '../contexts/AuthUserContext';
+import { useAuth } from '../contexts/AuthContext';
 import { getUserFriendRequests } from '../firebase/db';
 
 interface TabPanelProps {
@@ -43,12 +43,12 @@ export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequestType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuthUser();
+  const { currentUser } = useAuth();
 
   // Load friend requests
   useEffect(() => {
     const loadFriendRequests = async () => {
-      if (!user?.uid) return;
+      if (!currentUser?.uid) return;
       
       try {
         setIsLoading(true);

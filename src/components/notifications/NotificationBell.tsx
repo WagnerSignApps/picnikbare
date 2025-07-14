@@ -2,7 +2,7 @@ import { useState, useCallback, Fragment } from 'react';
 import { Badge, IconButton, Menu, MenuItem, Typography, Box, Divider, Button } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useAuthUser } from '../../contexts/AuthUserContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { playSound } from '../../utils/sound';
 import { Notification } from '../../firebase/notifications';
@@ -10,7 +10,7 @@ import { Notification } from '../../firebase/notifications';
 // Using Notification type from firebase/notifications
 
 export const NotificationBell = () => {
-  const { user } = useAuthUser();
+  const { currentUser } = useAuth();
   const { notifications, markAsRead, unreadCount } = useNotifications();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export const NotificationBell = () => {
   const notificationCount = unreadCount || 0;
 
   const handleRespondToInvite = useCallback(async (notification: Notification, accept: boolean) => {
-    if (!user?.uid) return;
+    if (!currentUser?.uid) return;
     setIsProcessing(notification.id);
     
     try {
@@ -40,7 +40,7 @@ export const NotificationBell = () => {
     } finally {
       setIsProcessing(null);
     }
-  }, [user, markAsRead, navigate]);
+  }, [currentUser, markAsRead, navigate]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (notification.type === 'picnic_invite') return; // Handled by buttons

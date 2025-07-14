@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthSimple';
 import { getUnreadNotifications, markNotificationAsRead, Notification } from '../firebase/notifications';
 import { playSound } from '../utils/sound';
 import { onSnapshot, query, where, collection } from 'firebase/firestore';

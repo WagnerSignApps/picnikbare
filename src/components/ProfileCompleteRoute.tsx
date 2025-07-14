@@ -1,13 +1,14 @@
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 
-interface PrivateRouteProps {
+interface Props {
   children: React.ReactNode;
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+const ProfileCompleteRoute: React.FC<Props> = ({ children }) => {
+  const { currentUser, userData, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -18,12 +19,18 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     );
   }
 
+  // Not authenticated: redirect to login
   if (!currentUser) {
-    // Redirect to the login page, but save the current location they were trying to go to
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Authenticated but no username: redirect to set-username
+  if (!userData?.username) {
+    return <Navigate to="/set-username" state={{ from: location }} replace />;
+  }
+
+  // Authenticated and username set: render children
   return <>{children}</>;
 };
 
-export default PrivateRoute;
+export default ProfileCompleteRoute;

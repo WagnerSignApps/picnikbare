@@ -4,8 +4,8 @@ import { HomeIcon as HomeIconSolid, UserGroupIcon as UserGroupIconSolid, UserIco
 
 import { FirebaseProvider } from './contexts/FirebaseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { useAuthUser } from './contexts/AuthUserContext';
-import { AuthUserProvider } from './contexts/AuthUserContext';
+import { AuthProvider, useAuth } from './contexts/AuthSimple';
+
 import AuthPage from './pages/AuthPage';
 import { NotificationBell } from './components/notifications/NotificationBell';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -17,6 +17,8 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import FriendsPage from './pages/FriendsPage';
 import PrivateRoute from './components/PrivateRoute';
+import ProfileCompleteRoute from './components/ProfileCompleteRoute';
+import SetUsernamePage from './pages/SetUsernamePage';
 import JoinPicnicPage from './pages/JoinPicnicPage';
 
 // Main app layout with header and tab bar
@@ -46,8 +48,8 @@ function App() {
     <ThemeProvider>
       <FirebaseProvider>
         
-          <NotificationProvider>
-            <AuthUserProvider>
+          <AuthProvider>
+            <NotificationProvider>
               <Routes>
                 {/* Public routes */}
                 <Route element={<AuthLayout />}>
@@ -57,33 +59,34 @@ function App() {
                 </Route>
                 {/* Protected routes */}
                 <Route element={<AppLayout />}>
-                  <Route path="/join-picnic/:picnicId" element={
-                    <PrivateRoute>
-                      <JoinPicnicPage />
-                    </PrivateRoute>
-                  } />
-                  <Route 
-                    element={
-                      <PrivateRoute>
-                        <Outlet />
-                      </PrivateRoute>
-                    }
-                  >
-                    <Route index element={<StartPicnikTab />} />
-                    <Route path="/start-picnic" element={<StartPicnikTab />} />
-                    <Route path="/friends" element={<FriendsTab />} />
-                    <Route path="/find-friends" element={<FriendsPage />} />
-                    <Route path="/restaurants" element={<RestaurantsTab />} />
-                    <Route path="/profile" element={<ProfileTab />} />
-                  </Route>
-                </Route>
+  <Route path="/set-username" element={<ProfileCompleteRoute><SetUsernamePage /></ProfileCompleteRoute>} />
+  <Route path="/join-picnic/:picnicId" element={
+    <ProfileCompleteRoute>
+      <JoinPicnicPage />
+    </ProfileCompleteRoute>
+  } />
+  <Route 
+    element={
+      <ProfileCompleteRoute>
+        <Outlet />
+      </ProfileCompleteRoute>
+    }
+  >
+    <Route index element={<StartPicnikTab />} />
+    <Route path="/start-picnic" element={<StartPicnikTab />} />
+    <Route path="/friends" element={<FriendsTab />} />
+    <Route path="/find-friends" element={<FriendsPage />} />
+    <Route path="/restaurants" element={<RestaurantsTab />} />
+    <Route path="/profile" element={<ProfileTab />} />
+  </Route>
+</Route>
                 {/* Redirect root to login */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 {/* Redirect to login if no match */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
-            </AuthUserProvider>
-          </NotificationProvider>
+            </NotificationProvider>
+            </AuthProvider>
         
       </FirebaseProvider>
     </ThemeProvider>
@@ -91,15 +94,23 @@ function App() {
 }
 
 function Header() {
-  const { user } = useAuthUser();
+  const { currentUser, logout } = useAuth();
+  console.log('[Header] currentUser:', currentUser);
   
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm z-10 sticky top-0">
       <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold text-red-500">Picnik</h1>
-        {user && (
+        {currentUser && (
           <div className="flex items-center space-x-2">
             <NotificationBell />
+            <button
+              onClick={logout}
+              style={{ background: '#f87171', color: 'white', borderRadius: 4, padding: '4px 10px', fontWeight: 600 }}
+              title="Force Logout (Troubleshooting)"
+            >
+              Force Logout
+            </button>
           </div>
         )}
       </div>

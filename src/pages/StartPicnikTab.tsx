@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthUser } from '../contexts/AuthUserContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { collection, doc, setDoc, deleteDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { useLocation } from 'react-router-dom';
@@ -59,7 +59,7 @@ export function StartPicnikTab() {
   const [errorState, setErrorState] = useState<string | null>(null);
   
   const { db } = useFirebase();
-  const { user, loading } = useAuthUser();
+  const { currentUser, loading } = useAuth();
   
   // Get weather emoji and face based on condition
   const getWeatherEmoji = (condition: string) => {
@@ -134,29 +134,20 @@ export function StartPicnikTab() {
         unit: '°F'
       });
       
-      // Update user location
+      // Update currentUser location
       setUserLocation({ lat, lng });
       
     } catch (err) {
       console.error('Error fetching weather:', err);
       setErrorState('Failed to load weather data');
       
-      // Fallback to mock data if API fails
-      const fallbackWeather: WeatherData = {
-        emoji: '🌤️',
-        face: '😊',
-        message: 'Weather data not available',
-        temp: 72,
-        condition: 'Unknown',
-        unit: '°F'
-      };
-      setWeather(fallbackWeather);
+
     } finally {
       setWeatherLoading(false);
     }
   }, []);
 
-  // Load user location and weather
+  // Load currentUser location and weather
   useEffect(() => {
     const fetchLocationAndWeather = async () => {
       try {
@@ -204,7 +195,7 @@ export function StartPicnikTab() {
 
   // Handle photo taken from camera
   const handlePhotoTaken = useCallback(async (imageData: string) => {
-    if (!user || !selectedRestaurant) return;
+    if (!currentUser || !selectedRestaurant) return;
     
     try {
       setIsCreatingPicnic(true);
@@ -213,7 +204,7 @@ export function StartPicnikTab() {
       const picnicId = uuidv4();
       const storage = getStorage();
       const fileName = `photo-${Date.now()}.jpg`;
-      const storagePath = `picnics/${user.uid}/${picnicId}/${fileName}`;
+      const storagePath = `picnics/${currentUser.uid}/${picnicId}/${fileName}`;
       const storageRef = ref(storage, storagePath);
 
       // Convert base64 to blob and upload
@@ -225,20 +216,20 @@ export function StartPicnikTab() {
       // Create picnic document
       const picnicData: ExtendedPicnicData = {
         id: picnicId,
-        hostName: user.displayName || 'You',
-        hostPhotoURL: user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+        hostName: currentUser.displayName || 'You',
+        hostPhotoURL: currentUser.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
         restaurantName: selectedRestaurant.name,
         participants: [{
-          id: user.uid,
-          name: user.displayName || 'You',
-          photoURL: user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+          id: currentUser.uid,
+          name: currentUser.displayName || 'You',
+          photoURL: currentUser.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
         }],
         status: 'active',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         photoPath: storagePath,
         photoURL: photoURL,
-        hostId: user.uid
+        hostId: currentUser.uid
       };
 
       // Save to Firestore
@@ -258,17 +249,17 @@ export function StartPicnikTab() {
     } finally {
       setIsCreatingPicnic(false);
     }
-  }, [user, selectedRestaurant, db, navigate]);
+  }, [currentUser, selectedRestaurant, db, navigate]);
   
   // Load active picnics on mount
   useEffect(() => {
-    if (!user) return;
+    if (!currentUser) return;
     
     const loadActivePicnics = async () => {
       try {
         const q = query(
           collection(db, 'picnics'),
-          where('participants', 'array-contains', { id: user.uid })
+          where('participants', 'array-contains', { id: currentUser.uid })
         );
         
         const querySnapshot = await getDocs(q);
@@ -285,7 +276,7 @@ export function StartPicnikTab() {
     };
     
     loadActivePicnics();
-  }, [user, db]);
+  }, [currentUser, db]);
 
   // Check for restaurant data in location state
   useEffect(() => {
@@ -299,7 +290,7 @@ export function StartPicnikTab() {
 
   // Handle picnic deletion
   const handleDeletePicnic = useCallback(async (picnicId: string) => {
-    if (!user) return;
+    if (!currentUser) return;
     
     try {
       // First find the document ID since we're querying by picnic ID
@@ -317,7 +308,7 @@ export function StartPicnikTab() {
       console.error('Error deleting picnic:', error);
       setErrorState('Failed to delete picnic. Please try again.');
     }
-  }, [user, db]);
+  }, [currentUser, db]);
 
   if (weatherLoading || loading) {
     return (
@@ -383,7 +374,7 @@ export function StartPicnikTab() {
               />
               
               {activePicnics.map((picnic) => (
-                user?.uid === picnic.hostId && (
+                currentUser?.uid === picnic.hostId && (
                   <div key={`delete-${picnic.id}`} className="relative">
                     <button
                       onClick={(e) => {

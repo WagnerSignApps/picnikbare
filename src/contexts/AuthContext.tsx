@@ -1,39 +1,12 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  type User as FirebaseUser,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  sendPasswordResetEmail,
-  updateProfile,
-  updateEmail as updateFirebaseEmail,
-  updatePassword as updateFirebasePassword,
-  fetchSignInMethodsForEmail,
-  // Add back if needed later:
-  // reauthenticateWithCredential,
-  // EmailAuthProvider,
-} from 'firebase/auth';
-import { auth } from '../firebase/config';
-import { type User, createUser, getUser } from '../firebase/db';
+import React from 'react';
+import { AuthProvider as InnerAuthProvider, useAuth as innerUseAuth } from './AuthSimple';
 
-interface AuthContextType {
-  currentUser: FirebaseUser | null;
-  userData: User | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updateEmail: (email: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
-  updateDisplayName: (displayName: string) => Promise<void>;
-  updatePhotoURL: (photoURL: string) => Promise<void>;
-}
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <InnerAuthProvider>{children}</InnerAuthProvider>
+);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const useAuth = innerUseAuth;
+  console.log('[AuthProvider] RENDERED');
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,17 +99,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Set up auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('[AuthProvider] onAuthStateChanged fired. user:', user);
+
       setCurrentUser(user);
+      console.log('[AuthProvider] setCurrentUser:', user);
+
       
       if (user) {
         // Fetch additional user data from Firestore
         const userDoc = await getUser(user.uid);
         setUserData(userDoc);
+        console.log('[AuthProvider] setUserData:', userDoc);
+
       } else {
         setUserData(null);
+        console.log('[AuthProvider] setUserData: null');
+
       }
       
       setLoading(false);
+      console.log('[AuthProvider] setLoading(false)');
     });
 
     return unsubscribe;

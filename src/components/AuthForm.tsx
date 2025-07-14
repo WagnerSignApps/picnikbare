@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthProvider';
+import { useAuth } from '../contexts/AuthContext';
 
 const AuthForm: React.FC = () => {
-  const { user, loading, signIn, signUp, signOut } = useAuth();
+  const { loading, signIn, signUp, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false);
@@ -23,14 +23,7 @@ const AuthForm: React.FC = () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (user) {
-    return (
-      <div>
-        <p>Welcome, {user.email}!</p>
-        <button onClick={signOut}>Sign Out</button>
-      </div>
-    );
-  }
+  
 
   return (
     <form onSubmit={handleSubmit}>

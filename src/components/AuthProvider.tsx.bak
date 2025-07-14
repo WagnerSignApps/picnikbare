@@ -1,0 +1,1 @@
+// This file has been renamed to prevent accidental usage. Please use src/contexts/AuthContext.tsx for AuthProvider and useAuth.

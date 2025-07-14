@@ -6,7 +6,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,10 +14,10 @@ export default function AuthPage() {
     try {
       if (mode === "login") {
         const res = await login(email, password);
-        setUser(res.user);
+        
       } else {
         const res = await register(email, password);
-        setUser(res.user);
+        
       }
     } catch (err: any) {
       setError(err.message);

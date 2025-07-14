@@ -160,12 +160,13 @@ interface Picnic {
   participants: string[];
 }
 
-import { useAuthUser } from '../contexts/AuthUserContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export function ProfileTab() {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode, temperatureUnit, toggleTemperatureUnit } = useTheme();
   const { auth, getDocument, getDocuments, updateDocument, uploadFile, db } = useFirebase();
+  const { currentUser, signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNotificationPrefs, setShowNotificationPrefs] = useState(false);
@@ -174,7 +175,7 @@ export function ProfileTab() {
   
   // State declarations - all hooks must be called in the same order on every render
   const [activeTab, setActiveTab] = useState<'picniks' | 'saved' | 'reviews'>('picniks');
-  const { user } = useAuthUser();
+  
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [picnics, setPicnics] = useState<Picnic[]>([]);
   const [savedRestaurants, setSavedRestaurants] = useState<any[]>([]);
@@ -202,13 +203,13 @@ export function ProfileTab() {
 
   // Load saved restaurants
   useEffect(() => {
-    if (!user) return;
+    if (!currentUser) return;
     
     const loadSavedRestaurants = async () => {
       setIsLoadingSaved(true);
       try {
         // Use the user's savedRestaurants subcollection
-        const savedRestaurantsRef = collection(db, 'users', user!.uid, 'savedRestaurants');
+        const savedRestaurantsRef = collection(db, 'users', currentUser!.uid, 'savedRestaurants');
         const savedQuery = query(
           savedRestaurantsRef,
           orderBy('createdAt', 'desc')
@@ -259,12 +260,12 @@ export function ProfileTab() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (!user) {
+        if (!currentUser) {
           setIsUserLoading(false);
           return;
         }
 
-        const userDoc = await getDocument<UserProfile>('users', user.uid);
+        const userDoc = await getDocument<UserProfile>('users', currentUser.uid);
         if (userDoc) {
           setProfile({
             displayName: userDoc.displayName || 'User',
@@ -287,16 +288,16 @@ export function ProfileTab() {
     };
 
     fetchUserData();
-  }, [user, getDocument]);
+  }, [currentUser, getDocument]);
 
   // Fallback user data if not logged in or data not found
   
 
   const handleUpdateProfile = async (updatedData: Partial<UserProfile>) => {
-    if (!user?.uid) return;
+    if (!currentUser?.uid) return;
     
     try {
-      await updateDocument('users', user.uid, updatedData);
+      await updateDocument('users', currentUser.uid, updatedData);
       setProfile((prev: UserProfile | null) => prev ? { ...prev, ...updatedData } : null);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -306,12 +307,12 @@ export function ProfileTab() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user?.uid) return;
+    if (!file || !currentUser?.uid) return;
 
     setIsUploading(true);
     try {
-      const downloadURL = await uploadFile(`profilePics/${user.uid}`, file);
-      await updateDocument('users', user.uid, { photoURL: downloadURL });
+      const downloadURL = await uploadFile(`profilePics/${currentUser.uid}`, file);
+      await updateDocument('users', currentUser.uid, { photoURL: downloadURL });
       setProfile((prev: UserProfile | null) => prev ? { ...prev, photoURL: downloadURL } : null);
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -326,7 +327,7 @@ export function ProfileTab() {
 
   const handleSignOut = async () => {
     try {
-      await auth.signOut();
+      await signOut();
       navigate('/login');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -336,7 +337,7 @@ export function ProfileTab() {
 
   // Handle unsaving a restaurant
   const handleUnsaveRestaurant = async (restaurantId: string) => {
-    if (!user) return;
+    if (!currentUser) return;
     
     try {
       // Remove from Firestore
@@ -355,7 +356,7 @@ export function ProfileTab() {
   // Fetch user's picnics
   useEffect(() => {
     const fetchUserPicnics = async () => {
-      if (!user) {
+      if (!currentUser) {
         setIsPicnicsLoading(false);
         return;
       }
@@ -365,17 +366,17 @@ export function ProfileTab() {
         const userPicnics: Picnic[] = [];
         
         // Only fetch picnics if we have a valid user
-        if (user.uid) {
+        if (currentUser.uid) {
           // First, try to get picnics where user is a participant
           const picnicsQuery = query(
             collection(db, 'picnics'),
-            where('participants', 'array-contains', user.uid),
+            where('participants', 'array-contains', currentUser.uid),
             orderBy('createdAt', 'desc')
           );
           
           console.log('Fetching picnics with query:', {
             collection: 'picnics',
-            where: ['participants', 'array-contains', user.uid],
+            where: ['participants', 'array-contains', currentUser.uid],
             orderBy: ['createdAt', 'desc']
           });
           
