@@ -88,3 +88,17 @@ export const sendPicnicInvite = async ({
     message,
   });
 };
+
+export const respondToPicnicInvite = async ({
+  picnicId,
+  notificationId,
+  accept,
+}: {
+  picnicId: string;
+  notificationId: string;
+  accept: boolean;
+}) => {
+  const functions = getFunctions();
+  const respondToInvite = httpsCallable(functions, 'respondToPicnicInvite');
+  return respondToInvite({ picnicId, notificationId, accept });
+};

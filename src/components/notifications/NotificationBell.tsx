@@ -5,7 +5,8 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { playSound } from '../../utils/sound';
-import { Notification } from '../../firebase/notifications';
+import { Notification, respondToPicnicInvite } from '../../firebase/notifications';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Using Notification type from firebase/notifications
 
@@ -21,17 +22,18 @@ export const NotificationBell = () => {
   const notificationCount = unreadCount || 0;
 
   const handleRespondToInvite = useCallback(async (notification: Notification, accept: boolean) => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid || !notification.picnicId) return;
     setIsProcessing(notification.id);
     
     try {
-      // For now, just mark as read and play sound
-      // TODO: Implement actual invite response handling
-      await markAsRead(notification.id);
+      await respondToPicnicInvite({
+        picnicId: notification.picnicId,
+        notificationId: notification.id,
+        accept,
+      });
       playSound(accept ? 'success' : 'notification');
       
-      if (accept && notification.picnicId) {
-        // Navigate to the picnic if accepting
+      if (accept) {
         navigate(`/picnic/${notification.picnicId}`);
       }
     } catch (error) {
@@ -40,7 +42,7 @@ export const NotificationBell = () => {
     } finally {
       setIsProcessing(null);
     }
-  }, [currentUser, markAsRead, navigate]);
+  }, [currentUser, navigate]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (notification.type === 'picnic_invite') return; // Handled by buttons

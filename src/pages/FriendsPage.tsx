@@ -52,7 +52,7 @@ export default function FriendsPage() {
       
       try {
         setIsLoading(true);
-        const requests = await getUserFriendRequests(user.uid);
+        const requests = await getUserFriendRequests(currentUser.uid);
         setFriendRequests(requests);
       } catch (error) {
         console.error('Error loading friend requests:', error);
@@ -62,7 +62,7 @@ export default function FriendsPage() {
     };
 
     loadFriendRequests();
-  }, [user?.uid]);
+  }, [currentUser?.uid]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
