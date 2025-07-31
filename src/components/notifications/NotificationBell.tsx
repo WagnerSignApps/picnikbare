@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { playSound } from '../../utils/sound';
 import { Notification, respondToPicnicInvite } from '../../firebase/notifications';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Using Notification type from firebase/notifications
 

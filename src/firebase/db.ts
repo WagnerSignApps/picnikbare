@@ -27,6 +27,8 @@ declare global {
 export interface User {
   id: string;
   name: string;
+  username?: string;
+  bio?: string;
   email: string;
   photoURL?: string;
   friends: string[];
@@ -36,6 +38,11 @@ export interface User {
       email: string;
       photoURL?: string;
     };
+  };
+  stats?: {
+    picniks: number;
+    friends: number;
+    reviews: number;
   };
   createdAt: Date;
 }
@@ -468,7 +475,7 @@ export const getFriendsList = async (userId: string) => {
 };
 
 // User operations
-export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>) => {
+export const createUser = async (userId: string, userData: Omit<User, 'id' | 'createdAt'>) => {
   try {
     // Ensure required fields are present
     if (!userData.email) {
@@ -485,7 +492,7 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>) => {
     };
 
     // Create a reference to the user document using the same ID as the auth user
-    const userRef = doc(usersCollection, userData.email);
+    const userRef = doc(usersCollection, userId);
     
     // Set the document with merge: true to avoid overwriting existing data
     await setDoc(userRef, userToSave, { merge: true });
@@ -575,7 +582,7 @@ export const generateMockData = async () => {
     // Add more mock users as needed
   ];
 
-  const createdUsers = await Promise.all(mockUsers.map(createUser));
+  const createdUsers = await Promise.all(mockUsers.map(user => createUser(user.email, user)));
 
   // Update friends lists
   const updatePromises = createdUsers.map((user, index) => {

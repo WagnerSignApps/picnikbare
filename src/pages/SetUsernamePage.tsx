@@ -31,7 +31,7 @@ const SetUsernamePage: React.FC = () => {
         setLoading(false);
         return;
       }
-      await updateDocument('users', user.uid, { username });
+      await updateDocument('users', currentUser.uid, { username });
       navigate('/'); // Redirect to main app
     } catch (err: any) {
       setError('Failed to set username. Please try again.');

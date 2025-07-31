@@ -180,7 +180,7 @@ export const FriendsTab = () => {
   const handleAction = useCallback(async (friendId: string, action: 'accept' | 'decline' | 'remove' | 'add') => {
     const actionKey = `${action}-${friendId}`;
     
-    if (!user?.uid || isProcessing[actionKey]) return;
+    if (!currentUser?.uid || isProcessing[actionKey]) return;
     
     try {
       setIsProcessing(prev => ({ ...prev, [actionKey]: true }));
@@ -194,7 +194,7 @@ export const FriendsTab = () => {
       } else if (action === 'add') {
         // Not used - handled by handleAddFriend
       } else if (action === 'remove') {
-        const response = await removeFriendApi(user.uid, friendId);
+        const response = await removeFriendApi(currentUser.uid, friendId);
         if (response.success) {
           setFriends(prev => prev.filter(friend => friend.id !== friendId));
         }
@@ -207,14 +207,14 @@ export const FriendsTab = () => {
         [actionKey]: false
       }));
     }
-  }, [user?.uid, isProcessing, setFriends, setRawRequests]);
+  }, [currentUser?.uid, isProcessing, setFriends, setRawRequests]);
 
   const handleAddFriend = async () => {
-    if (!email || !user?.uid) return;
+    if (!email || !currentUser?.uid) return;
 
     try {
       setIsProcessing(prev => ({ ...prev, 'sendingRequest': true }));
-      const { success } = await sendFriendRequestApi(user.uid, email);
+      const { success } = await sendFriendRequestApi(currentUser.uid, email);
 
       if (success) {
         setShowAddFriend(false);
@@ -229,7 +229,7 @@ export const FriendsTab = () => {
 
   // Load friends and friend requests
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!currentUser?.uid) return;
 
     const loadData = async () => {
       try {
@@ -238,7 +238,7 @@ export const FriendsTab = () => {
         // Load friends
         const friendsQuery = query(
           collection(db, 'users'),
-          where('friends', 'array-contains', user.uid)
+          where('friends', 'array-contains', currentUser.uid)
         );
         
         const friendsSnapshot = await getDocs(friendsQuery);
@@ -261,7 +261,7 @@ export const FriendsTab = () => {
         // Load friend requests
         const requestsQuery = query(
           collection(db, 'friendRequests'),
-          where('toUserId', '==', user.uid),
+          where('toUserId', '==', currentUser.uid),
           where('status', '==', 'pending')
         );
 
@@ -314,14 +314,14 @@ export const FriendsTab = () => {
     loadData();
     
     // Set up real-time listeners
-    const unsubscribeFriends = setupFriendsListener(user.uid);
-    const unsubscribeRequests = setupRequestsListener(user.uid);
+    const unsubscribeFriends = setupFriendsListener(currentUser.uid);
+    const unsubscribeRequests = setupRequestsListener(currentUser.uid);
 
     return () => {
       if (unsubscribeFriends) unsubscribeFriends();
       if (unsubscribeRequests) unsubscribeRequests();
     };
-  }, [user?.uid]);
+  }, [currentUser?.uid]);
 
   // Set up real-time listener for friends
   const setupFriendsListener = (userId: string) => {
@@ -535,7 +535,7 @@ export const FriendsTab = () => {
                     <FriendItem 
                       key={friend.id} 
                       friend={friend} 
-                      userId={user?.uid}
+                      userId={currentUser?.uid}
                       onAction={handleAction}
                       isProcessing={isProcessing[`remove-${friend.id}`]}
                     />
@@ -570,7 +570,7 @@ export const FriendsTab = () => {
                         requestId: request.id,
                         online: false
                       }}
-                      userId={user?.uid}
+                      userId={currentUser?.uid}
                       onAction={handleFriendAction}
                       isProcessing={isProcessing[`${request.status === 'pending' ? 'accept' : 'remove'}-${request.id}`]}
                     />

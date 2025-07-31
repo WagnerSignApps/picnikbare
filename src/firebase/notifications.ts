@@ -1,4 +1,5 @@
 import { collection, doc, setDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from './config';
 
 export type NotificationType = 'picnic_invite' | 'friend_request' | 'picnic_update' | 'message';

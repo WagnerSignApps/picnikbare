@@ -424,17 +424,17 @@ export function ProfileTab() {
     };
 
     fetchUserPicnics();
-  }, [user, getDocument, getDocuments]);
+  }, [currentUser, getDocument, getDocuments]);
 
   // Load saved restaurants when the tab changes or user changes
   useEffect(() => {
     const loadSavedRestaurants = async () => {
-      if (activeTab !== 'saved' || !user) return;
+      if (activeTab !== 'saved' || !currentUser) return;
       
       setIsLoadingSaved(true);
       try {
         const savedQuery = query(
-          collection(db, 'users', user.uid, 'savedRestaurants'),
+          collection(db, 'users', currentUser.uid, 'savedRestaurants'),
           orderBy('savedAt', 'desc')
         );
         const snapshot = await getDocs(savedQuery);
@@ -484,7 +484,7 @@ export function ProfileTab() {
     };
 
     loadSavedRestaurants();
-  }, [activeTab, user, db, getDocs, query, where, collection]);
+  }, [activeTab, currentUser, db, getDocs, query, where, collection]);
 
   // Show loading state while data is being fetched
   if (isUserLoading) {

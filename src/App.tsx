@@ -6,7 +6,6 @@ import { FirebaseProvider } from './contexts/FirebaseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthSimple';
 
-import AuthPage from './pages/AuthPage';
 import { NotificationBell } from './components/notifications/NotificationBell';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { FriendsTab } from './pages/FriendsTab';
@@ -16,7 +15,6 @@ import { ProfileTab } from './pages/ProfileTab';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import FriendsPage from './pages/FriendsPage';
-import PrivateRoute from './components/PrivateRoute';
 import ProfileCompleteRoute from './components/ProfileCompleteRoute';
 import SetUsernamePage from './pages/SetUsernamePage';
 import JoinPicnicPage from './pages/JoinPicnicPage';
@@ -55,7 +53,6 @@ function App() {
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
-                  <Route path="/auth" element={<AuthPage />} />
                 </Route>
                 {/* Protected routes */}
                 <Route element={<AppLayout />}>
